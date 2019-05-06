@@ -21,6 +21,8 @@ class FakeController extends ValueNotifier<VideoPlayerValue>
   @override
   DataSourceType get dataSourceType => DataSourceType.file;
   @override
+  DataSourceEncoding get dataSourceEncoding => DataSourceEncoding.hls;
+  @override
   String get package => null;
   @override
   Future<Duration> get position async => value.position;

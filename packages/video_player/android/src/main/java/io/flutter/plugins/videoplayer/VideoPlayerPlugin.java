@@ -71,6 +71,7 @@ public class VideoPlayerPlugin implements MethodCallHandler {
         EventChannel eventChannel,
         TextureRegistry.SurfaceTextureEntry textureEntry,
         String dataSource,
+        @C.ContentType Integer contentType,
         Result result) {
       this.eventChannel = eventChannel;
       this.textureEntry = textureEntry;
@@ -93,7 +94,7 @@ public class VideoPlayerPlugin implements MethodCallHandler {
                 true);
       }
 
-      MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, context);
+      MediaSource mediaSource = buildMediaSource(uri, contentType, dataSourceFactory, context);
       exoPlayer.prepare(mediaSource);
 
       setupVideoPlayer(eventChannel, textureEntry, result);
@@ -108,8 +109,8 @@ public class VideoPlayerPlugin implements MethodCallHandler {
     }
 
     private MediaSource buildMediaSource(
-        Uri uri, DataSource.Factory mediaDataSourceFactory, Context context) {
-      int type = Util.inferContentType(uri.getLastPathSegment());
+            Uri uri, @C.ContentType Integer contentType, DataSource.Factory mediaDataSourceFactory, Context context) {
+      int type = contentType != null ? contentType : Util.inferContentType(uri.getLastPathSegment());
       switch (type) {
         case C.TYPE_SS:
           return new SsMediaSource.Factory(
@@ -343,12 +344,28 @@ public class VideoPlayerPlugin implements MethodCallHandler {
                     eventChannel,
                     handle,
                     "asset:///" + assetLookupKey,
+                    null,
                     result);
             videoPlayers.put(handle.id(), player);
           } else {
+            @C.ContentType Integer contentType = null;
+            String encoding = call.argument("encoding");
+            if (encoding != null) {
+              switch (encoding) {
+                case "hls":
+                  contentType = C.TYPE_HLS;
+                  break;
+                case "dash":
+                  contentType = C.TYPE_DASH;
+                  break;
+                default:
+                  contentType = null;
+                  break;
+              }
+            }
             player =
                 new VideoPlayer(
-                    registrar.context(), eventChannel, handle, call.argument("uri"), result);
+                    registrar.context(), eventChannel, handle, call.argument("uri"), contentType, result);
             videoPlayers.put(handle.id(), player);
           }
           break;

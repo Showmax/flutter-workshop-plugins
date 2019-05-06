@@ -132,6 +132,7 @@ class VideoPlayerValue {
 }
 
 enum DataSourceType { asset, network, file }
+enum DataSourceEncoding { hls, dash }
 
 /// Controls a platform video player, and provides updates when the state is
 /// changing.
@@ -151,6 +152,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// package and null otherwise.
   VideoPlayerController.asset(this.dataSource, {this.package})
       : dataSourceType = DataSourceType.asset,
+        dataSourceEncoding = null,
         super(VideoPlayerValue(duration: null));
 
   /// Constructs a [VideoPlayerController] playing a video from obtained from
@@ -158,10 +160,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   ///
   /// The URI for the video is given by the [dataSource] argument and must not be
   /// null.
-  VideoPlayerController.network(this.dataSource)
+  VideoPlayerController.network(this.dataSource, this.dataSourceEncoding)
       : dataSourceType = DataSourceType.network,
         package = null,
-        super(VideoPlayerValue(duration: null));
+      super(VideoPlayerValue(duration: null));
 
   /// Constructs a [VideoPlayerController] playing a video from a file.
   ///
@@ -171,7 +173,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       : dataSource = 'file://${file.path}',
         dataSourceType = DataSourceType.file,
         package = null,
-        super(VideoPlayerValue(duration: null));
+        dataSourceEncoding = null,
+      super(VideoPlayerValue(duration: null));
 
   int _textureId;
   final String dataSource;
@@ -179,6 +182,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// Describes the type of data source this [VideoPlayerController]
   /// is constructed with.
   final DataSourceType dataSourceType;
+  final DataSourceEncoding dataSourceEncoding;
 
   final String package;
   Timer _timer;
@@ -203,7 +207,18 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         };
         break;
       case DataSourceType.network:
-        dataSourceDescription = <String, dynamic>{'uri': dataSource};
+        String encoding;
+        if (dataSourceEncoding == DataSourceEncoding.hls) {
+          encoding = "hls";
+        } else if (dataSourceEncoding == DataSourceEncoding.dash) {
+          encoding = "dash";
+        } else {
+          encoding = null;
+        }
+        dataSourceDescription = <String, dynamic>{
+          'uri': dataSource,
+          'encoding' : encoding
+        };
         break;
       case DataSourceType.file:
         dataSourceDescription = <String, dynamic>{'uri': dataSource};
